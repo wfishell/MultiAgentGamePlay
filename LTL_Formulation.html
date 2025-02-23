@@ -13,22 +13,13 @@
       flex-direction: column;
       gap: 20px;
     }
-    .code-block, .image-block {
-      width: 100%;
-    }
     pre {
       background-color: #f4f4f4;
       padding: 15px;
       border-radius: 5px;
       overflow-x: auto;
-      white-space: pre-wrap; /* Allows wrapping of long lines */
-      word-wrap: break-word; /* Breaks long words if necessary */
-    }
-    code {
-      font-weight: bold;
-      display: block;
-      white-space: pre-wrap; /* Ensures the code inherits wrapping */
-      word-break: break-all; /* Forces long words or URLs to break */
+      white-space: pre-wrap; /* Enables text wrapping */
+      word-wrap: break-word;
     }
     .image-block img {
       max-width: 100%;
@@ -51,9 +42,8 @@
   </p>
   
   <div class="container">
-    <div class="code-block">
-      <pre><code>{
-  "ltl_formulation": "G(safe_robots &amp; safe_moves &amp; correct_state_changes &amp; obstacle_avoidance &amp; continuous_movement &amp; package_delivery &amp; adaptive_routing &amp; zone_clearing) &amp; GF(new_packages)",
+    <pre>{
+  "ltl_formulation": "G(safe_robots & safe_moves & correct_state_changes & obstacle_avoidance & continuous_movement & package_delivery & adaptive_routing & zone_clearing) & GF(new_packages)",
   "System_Player": {
     "name": "Robots",
     "init": "All robots start in the navigating state at their initial positions",
@@ -76,8 +66,8 @@
     "Robot states",
     "Grid configuration (obstacles and package locations)"
   ]
-}</code></pre>
-    </div>
+}</pre>
+    
     <div class="image-block">
       <figure>
         <img src="LLM_LTL_Pipeline.png" alt="LLM to LTL pipeline">
