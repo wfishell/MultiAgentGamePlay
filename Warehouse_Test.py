@@ -4,27 +4,26 @@ import sys
 import random
 from collections import deque
 from typing import List, Tuple
+from Enviorment1 import generate_grid, draw_grid  # Import the environment layout
 
 # --------------------------------------------------
-# Environment Setup (Warehouse Grid)
+# Environment Setup (Warehouse Grid using Enviorment1 layout)
 # --------------------------------------------------
 
-# Environment constants
+# Constants (should match those in Enviorment1.py)
 GRID_SIZE = 10
 CELL_SIZE = 60
 WINDOW_SIZE = GRID_SIZE * CELL_SIZE
 
 # Color definitions
 COLORS = {
-    "background": (255, 255, 255),
-    "obstacle": (0, 0, 0),
     "robot": (0, 255, 0),
     "package": (255, 0, 0),
     "delivered_package": (128, 128, 128),
     "grid_line": (128, 128, 128)
 }
 
-# Initialize Pygame
+# Initialize Pygame (the Enviorment1.py file should not reinitialize display)
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
 pygame.display.set_caption("Warehouse Package Delivery")
@@ -42,48 +41,32 @@ class Package:
         self.pos = pos  # (row, col)
         self.delivery_zone = delivery_zone  # (row_min, col_min, row_max, col_max)
 
-def generate_warehouse_grid() -> List[List[int]]:
-    """Generate a grid layout for the warehouse environment."""
-    grid = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-    # Add static obstacles (cell walls)
-    for i in range(GRID_SIZE):
-        grid[0][i] = 1
-        grid[GRID_SIZE - 1][i] = 1
-        grid[i][0] = 1
-        grid[i][GRID_SIZE - 1] = 1
-    # Add delivery zones (marked as 2)
-    for i in range(2, 6):
-        for j in range(2, 6):
-            grid[i][j] = 2
-            grid[i][GRID_SIZE - j - 1] = 2
-    return grid
+def get_drop_off_point(zone: Tuple[int, int, int, int]) -> Tuple[int, int]:
+    """Compute the drop-off point (center) of a delivery zone."""
+    return ((zone[0] + zone[2]) // 2, (zone[1] + zone[3]) // 2)
 
 def draw_warehouse_grid(grid: List[List[int]], robots: List[Robot],
                           packages: List[Package], delivered_packages: List[Tuple[int, int]]) -> None:
-    """Draw the warehouse grid, robots, packages, and delivered packages."""
-    screen.fill(COLORS["background"])
-    # Draw obstacles and delivery zones
-    for i in range(GRID_SIZE):
-        for j in range(GRID_SIZE):
-            if grid[i][j] == 1:
-                pygame.draw.rect(screen, COLORS["obstacle"],
-                                 (j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-            elif grid[i][j] == 2:
-                pygame.draw.rect(screen, COLORS["delivered_package"],
-                                 (j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-    # Draw robots
+    """
+    Draw the environment layout (from Enviorment1.py) and then overlay robots, packages,
+    and delivered packages.
+    """
+    # Draw the base grid from the environment layout
+    draw_grid(grid)
+    
+    # Overlay robots
     for robot in robots:
         pygame.draw.rect(screen, COLORS["robot"],
                          (robot.pos[1] * CELL_SIZE, robot.pos[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-    # Draw packages
+    # Overlay packages
     for package in packages:
         pygame.draw.rect(screen, COLORS["package"],
                          (package.pos[1] * CELL_SIZE, package.pos[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-    # Draw delivered packages
+    # Overlay delivered packages
     for pos in delivered_packages:
         pygame.draw.rect(screen, COLORS["delivered_package"],
                          (pos[1] * CELL_SIZE, pos[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-    # Draw grid lines
+    # Draw grid lines (to ensure clarity)
     for i in range(GRID_SIZE + 1):
         pygame.draw.line(screen, COLORS["grid_line"],
                          (i * CELL_SIZE, 0), (i * CELL_SIZE, WINDOW_SIZE))
@@ -91,18 +74,19 @@ def draw_warehouse_grid(grid: List[List[int]], robots: List[Robot],
                          (0, i * CELL_SIZE), (WINDOW_SIZE, i * CELL_SIZE))
 
 def is_valid_move(grid: List[List[int]], pos: Tuple[int, int]) -> bool:
-    """Check if a move to the given position is valid."""
+    """Check if a move to the given position is valid (non-obstacle)."""
     r, c = pos
     if r < 0 or r >= GRID_SIZE or c < 0 or c >= GRID_SIZE:
         return False
-    # Allow moves on free space (0) or delivery zone (2)
-    return grid[r][c] in (0, 2)
+    # In the imported grid, 0 represents free (white) and 1 represents obstacles (black)
+    return grid[r][c] == 0
 
 def run_environment():
     """Main loop to run the warehouse package delivery environment."""
     global global_grid, global_robots, global_packages
-    global_grid = generate_warehouse_grid()
-    # Create two robots with different delivery zones
+    # Use the environment layout from Enviorment1.py
+    global_grid = generate_grid()
+    # Create two robots with fixed delivery zones
     global_robots = [
         Robot((1, 1), (2, 2, 5, 5)),
         Robot((GRID_SIZE - 2, GRID_SIZE - 2), (2, GRID_SIZE - 5, 5, GRID_SIZE - 2))
@@ -122,18 +106,17 @@ def run_environment():
 
         # Simple reactive behavior for each robot
         for robot in global_robots:
-            # If navigating, plan a path to the nearest package
             if robot.state == "navigating":
+                # Plan a path to the nearest package
                 if global_packages:
                     target = min(global_packages, key=lambda p: abs(p.pos[0] - robot.pos[0]) + abs(p.pos[1] - robot.pos[1])).pos
                     robot.plan = find_path(global_grid, robot.pos, target)
                     if robot.plan and len(robot.plan) > 1:
                         robot.pos = robot.plan[1]
-            # If carrying, plan a path to the center of the delivery zone
             elif robot.state == "carrying":
-                zone = robot.delivery_zone
-                target = ((zone[0] + zone[2]) // 2, (zone[1] + zone[3]) // 2)
-                robot.plan = find_path(global_grid, robot.pos, target)
+                # Plan a path to the designated drop-off point
+                drop_off = get_drop_off_point(robot.delivery_zone)
+                robot.plan = find_path(global_grid, robot.pos, drop_off)
                 if robot.plan and len(robot.plan) > 1:
                     robot.pos = robot.plan[1]
 
@@ -151,11 +134,11 @@ def run_environment():
                 remaining_packages.append(package)
         global_packages = remaining_packages
 
-        # Package delivery: if a robot carrying a package reaches its delivery zone, deliver it.
+        # Package delivery: if a robot carrying a package reaches the drop-off point, deliver it.
         for robot in global_robots:
             if robot.state == "carrying":
-                zone = robot.delivery_zone
-                if zone[0] <= robot.pos[0] <= zone[2] and zone[1] <= robot.pos[1] <= zone[3]:
+                drop_off = get_drop_off_point(robot.delivery_zone)
+                if robot.pos == drop_off:
                     delivered_packages.append(robot.pos)
                     robot.state = "navigating"
                     robot.package = None
@@ -215,6 +198,7 @@ def find_path(grid: List[List[int]], start: Tuple[int, int], goal: Tuple[int, in
 # --------------------------------------------------
 # Reactive Planning Manager (Warehouse Package Delivery)
 # --------------------------------------------------
+# (Reactive planning functions remain unchanged)
 
 def create_groups(ltl_constraints: List[str]) -> List[List[str]]:
     """Create groups based on the LTL constraints."""
@@ -305,7 +289,6 @@ def reset_group_constraint(group: List[str], original_group: List[str]) -> List[
 def main_manager(transition_systems: List[List[int]], ltl_constraints: List[str]) -> None:
     """Main manager function running continuously to update and replan agent trajectories."""
     global global_grid, global_robots, global_packages
-    # For simulation, assume global_grid, global_robots, and global_packages are already defined.
     groups = create_groups(ltl_constraints)
     original_groups = [grp.copy() for grp in groups]
     num_groups = len(global_robots)  # Assume one group per robot
@@ -315,28 +298,20 @@ def main_manager(transition_systems: List[List[int]], ltl_constraints: List[str]
     while True:
         for idx in range(num_groups):
             robot = global_robots[idx]
-            # Assume robot is free initially.
             planning_free = True
             replan_flags[idx] = False
 
-            # Check for external input (e.g., new packages) or if the robot is stuck.
             if detect_input() or check_agent_status(idx):
                 planning_free = False
                 replan_flags[idx] = True
 
-            # Set planning specification based on current constraints.
-            if planning_free:
-                planning_specs[idx] = compute_planning_specification(groups[idx], None)
-            else:
-                planning_specs[idx] = compute_planning_specification(groups[idx], None)
+            planning_specs[idx] = compute_planning_specification(groups[idx], None)
 
-            # If replanning is needed, compute and execute a new plan.
             if replan_flags[idx]:
                 plan_path(global_grid, planning_specs[idx], robot, dispatch_flags[idx], dispatch_agent)
                 dispatch_flags[idx] = False
                 replan_flags[idx] = False
 
-            # Verify constraint satisfaction.
             if verify_constraint(groups[idx], global_grid):
                 groups[idx] = reset_group_constraint(groups[idx], original_groups[idx])
         time.sleep(0.1)
@@ -346,7 +321,6 @@ def main_manager(transition_systems: List[List[int]], ltl_constraints: List[str]
 # --------------------------------------------------
 
 if __name__ == "__main__":
-    # Run the environment in the main thread.
     try:
         run_environment()
     except Exception as e:
