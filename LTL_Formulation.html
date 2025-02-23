@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LLM to LTL formulation Pipeline</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .code-block, .image-block {
+      flex: 1;
+    }
+    pre {
+      background-color: #f4f4f4;
+      padding: 15px;
+      border-radius: 5px;
+      overflow: auto;
+    }
+    code {
+      font-weight: bold;
+      display: block;
+    }
+    .image-block img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .image-block figcaption {
+      text-align: center;
+      font-style: italic;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>LLM to LTL formulation Pipeline</h1>
+  
+  <p>
+    We pass in text descriptions of our games, with a high level description of the gameplay, system requirements, and liveness requirements. Using this information, the LLM outputs a JSON file with LTL formulation, system Player information, and environment player information. We then construct a parity game to check this LTL specification is realizable. If it is not regenerate the LTL specification otherwise we continue to generate the game.
+  </p>
+  
+  <div class="container">
+    <div class="code-block">
+      <pre><code>{
+  "ltl_formulation": "G(safe_robots &amp; safe_moves &amp; correct_state_changes &amp; obstacle_avoidance &amp; continuous_movement &amp; package_delivery &amp; adaptive_routing &amp; zone_clearing) &amp; GF(new_packages)",
+  "System_Player": {
+    "name": "Robots",
+    "init": "All robots start in the navigating state at their initial positions",
+    "safety": "Robots never share a grid cell, avoid static obstacles (cell walls and delivered packages), avoid dynamic obstacles (other robots and undelivered boxes), carry at most one package at a time, ensure delivered packages don't block critical pathways to delivery zones, change states only when properly positioned (pickups at spawn points, drop-offs in delivery zones)",
+    "prog": "Robots must move to a new legal grid cell at each time step, must eventually pick up and deliver assigned packages, must continuously adapt routes as obstacles change, once all packages for a time step are delivered, boxes in the delivery zone are removed"
+  },
+  "Environment_Player": {
+    "name": "Warehouse",
+    "init": "Initial grid configuration with static obstacles (cell walls) and package spawn points",
+    "safety": "New packages are generated only after all current packages are delivered, at most four packages per robot zone at any time",
+    "prog": "Intermittently generate new packages at specific time steps"
+  },
+  "Inputs": [
+    "Robot positions",
+    "Robot states",
+    "Grid configuration (obstacles and package locations)"
+  ],
+  "Outputs": [
+    "Robot positions",
+    "Robot states",
+    "Grid configuration (obstacles and package locations)"
+  ]
+}</code></pre>
+    </div>
+    <div class="image-block">
+      <figure>
+        <!-- Replace 'pipeline.jpg' with the actual image source -->
+        <img src="pipeline.jpg" alt="LLM to LTL pipeline">
+        <figcaption>LLM to LTL pipeline</figcaption>
+      </figure>
+    </div>
+  </div>
+</body>
+</html>
