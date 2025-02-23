@@ -1,0 +1,5 @@
+In this cooperative puzzle game, the environment randomly assigns positions for colored boxes on the grid. Each robot, associated with a specific color, must navigate toward the box matching its color. All robots move simultaneously in discrete time steps. When every robot reaches its designated box, the environment immediately reassigns new random positions to the boxes, ensuring that they do not appear on obstacles or on cells currently occupied by any robot. This cycle of movement and reassignment continues indefinitely, requiring continuous coordination among the robots.
+
+Safety Requirements: Robots must never collide with one another or with obstacles, and boxes must never be placed on cells that are already occupied by a robot. Each robot must navigate only within legal grid cells, ensuring that all moves are safe and do not result in overlapping positions.
+
+Liveness Requirements: All robots must move to a new legal grid cell at every time step, ensuring continuous progress. Every robot must eventually reach its designated box, and the environment guarantees that new box positions are always available to prevent deadlock and maintain ongoing gameplay.
