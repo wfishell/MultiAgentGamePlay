@@ -6,7 +6,7 @@ from typing import List, Tuple, Set
 
 # --------------------------------------------------
 # Environment Setup (Cops and Robbers Maze)
-# ----------------------------------------------x----
+# --------------------------------------------------
 
 # Environment constants
 GRID_SIZE = 20
@@ -33,16 +33,37 @@ SAFETY_ZONE_TOP_LEFTS = [(3, 3), (14, 14)]
 
 def generate_maze() -> List[List[int]]:
     """
-    Generate a random maze layout for the environment.
-    0 represents a free (white) cell, 1 represents an obstacle.
+    Generate a maze layout with fixed obstacles.
+    The obstacles come from a fixed 10x10 grid (0: free, 1: obstacle)
+    that is scaled to a 20x20 grid by duplicating each cell into a 2x2 block.
     Then, carve out 2x2 safety zones (cells set to 2) at specified locations.
     """
-    maze = []
-    for _ in range(GRID_SIZE):
-        row = [0 if random.random() > 0.2 else 1 for _ in range(GRID_SIZE)]
-        maze.append(row)
+    # Fixed obstacle grid from Enviorment1.py (10x10)
+    fixed_grid = [
+        [0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        [0, 1, 1, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+    ]
     
-    # Carve out safety zones as 2x2 blocks with value 2
+    # Scale the fixed 10x10 grid to a 20x20 grid:
+    maze = []
+    for row in fixed_grid:
+        scaled_row = []
+        for cell in row:
+            # Duplicate each cell horizontally
+            scaled_row.extend([cell, cell])
+        # Duplicate each row vertically
+        maze.append(scaled_row)
+        maze.append(scaled_row.copy())
+    
+    # Carve out safety zones as 2x2 blocks with value 2 (override obstacles if any)
     for (r, c) in SAFETY_ZONE_TOP_LEFTS:
         for i in range(2):
             for j in range(2):
@@ -133,8 +154,19 @@ def run_environment():
     Agents move every second.
     """
     maze = generate_maze()
-    cop_positions = [(0, 0), (0, 1), (1, 0), (1, 1)]  # Example initial cop positions
-    robber_positions = [(3, 3), (3, 4), (4, 3), (4, 4)]  # Example initial robber positions
+    
+    # Updated initial positions:
+    # Cops start in the four corners of the grid.
+    cop_positions = [(0, 0), (0, GRID_SIZE - 1), (GRID_SIZE - 1, 0), (GRID_SIZE - 1, GRID_SIZE - 1)]
+    
+    # Robbers are spread out near the center.
+    robber_positions = [
+        (GRID_SIZE // 2 - 4, GRID_SIZE // 2 - 4),
+        (GRID_SIZE // 2 - 4, GRID_SIZE // 2 + 4),
+        (GRID_SIZE // 2 + 4, GRID_SIZE // 2 - 4),
+        (GRID_SIZE // 2 + 4, GRID_SIZE // 2 + 4)
+    ]
+    
     running = True
     clock = pygame.time.Clock()
     last_move_time = time.time()
@@ -146,6 +178,7 @@ def run_environment():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    # Regenerate the maze (obstacles and safety zones are re-established)
                     maze = generate_maze()
         
         current_time = time.time()
