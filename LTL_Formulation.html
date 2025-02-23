@@ -20,13 +20,15 @@
       background-color: #f4f4f4;
       padding: 15px;
       border-radius: 5px;
-      overflow: auto;
+      overflow-x: auto;
       white-space: pre-wrap; /* Allows wrapping of long lines */
       word-wrap: break-word; /* Breaks long words if necessary */
     }
     code {
       font-weight: bold;
       display: block;
+      white-space: pre-wrap; /* Ensures the code inherits wrapping */
+      word-break: break-all; /* Forces long words or URLs to break */
     }
     .image-block img {
       max-width: 100%;
