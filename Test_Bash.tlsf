@@ -1,0 +1,49 @@
+// INFO block: basic information about the specification
+INFO {
+  TITLE:       "Package Delivery Robot"
+  DESCRIPTION: "Specification for a robot that picks up packages placed by the environment and delivers them."
+  SEMANTICS:   Moore
+  TARGET:      Mealy
+}
+
+// GLOBAL block: define shorthand predicates or abbreviations.
+GLOBAL {
+  // Environment places a package (input proposition).
+  PackageAvailable = true;
+  
+  // Robot actions (output propositions).
+  PickUp   = true;   // robot picks up a package
+  Carrying = true;   // robot is in the carrying state
+  DropOff  = true;   // robot drops off the package in the package zone
+}
+
+// MAIN block: declaring inputs/outputs and the LTL formulas.
+MAIN {
+  INPUTS {
+    PackageAvailable;  // The environment places packages.
+  }
+  OUTPUTS {
+    PickUp;
+    Carrying;
+    DropOff;
+  }
+  ASSUMPTIONS {
+    // (Optionally, you might assume that packages eventually appear,
+    // e.g., G( F PackageAvailable ) )
+  }
+  INVARIANTS {
+    // 1. When a package is available and the robot is not already carrying one,
+    //    it must eventually pick it up.
+    G( (PackageAvailable && !Carrying) -> F PickUp );
+    
+    // 2. Once the robot is carrying a package, it must eventually deliver it.
+    G( Carrying -> F DropOff );
+    
+    // 3. While carrying a package, the robot is not allowed to pick up another package
+    //    until it has dropped off the current one.
+    G( Carrying -> ( !PickUp U DropOff ) );
+    
+    // 4. After dropping off a package, if a package is available, the robot must eventually pick one up.
+    G( DropOff -> ( PackageAvailable -> F PickUp ) );
+  }
+}
